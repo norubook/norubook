@@ -1,0 +1,41 @@
+name: Update Profile Achievements
+
+on:
+  schedule:
+    # 毎日 日本時間の朝9時に実行 (UTCの0時)
+    - cron: '0 0 * * *'
+  # 手動でも実行できるようにする
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run achievement updater script
+        run: python scripts/update_achievements.py
+        env:
+          # スクリプト内でGITHUB_TOKENを読み取れるようにする
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          # 変更があった場合のみコミットする
+          git diff --staged --quiet || git commit -m "🏆 Update achievements"
+          git push
